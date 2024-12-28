@@ -1,4 +1,6 @@
 from flask_login import current_user, login_user, login_required, logout_user
+
+from applications.controller import GlobalFunction
 from ..dao import LoginDao as loginDao
 from .. import login_manager
 from io import StringIO
@@ -67,11 +69,29 @@ def add_rek():
     return jsonify({"status": db_res.status, "message": "Berhasil Tambah Data"})
 
 
-@app.route('/rek/downloadAllRek', methods=['GET'])
+@app.route('/rek/downloadAllRekPdf', methods=['GET'])
 @login_required
-def download_all_rek():
+def download_all_rek_pdf():
     db_res = rekDao.get_all_rek()
     data = db_res.result
     if len(data) > 0:
         return jsonify({"status": True, "message": "Berhasil Get Data", "data":generate_pdf(data)})
     return jsonify({"status": False, "message": "Tidak Ada Data"})
+
+
+@app.route('/rek/downloadAllRek', methods=['GET'])
+@login_required
+def download_all_rek():
+    res = rekDao.get_data_rek_filter(
+        request.args.get("search")
+    )
+    data = res.result
+    for x in data:
+        x['ID Rek'] = int(x['ID Rek'])
+        x['Nomor Rekening'] = int(x['Nomor Rekening'])
+    message = ""
+    if len(data) > 0:
+        download, message = GlobalFunction.generateExcel('Rekening', data)
+        if download:
+            return jsonify({"status": True, "message": "Berhasil Download File"})
+    return jsonify({"status": False, "message": f"Gagal Download File\n{message}"})

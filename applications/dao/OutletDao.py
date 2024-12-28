@@ -19,6 +19,27 @@ def dt_data_outlet(search, offset):
 
     return db.execute_dt(query, param, limit=25)
 
+def get_data_outlet_filter(search):
+    db = PostgresDatabase()
+    query = """
+        SELECT
+            outlet_id as "ID Outlet", 
+            outlet_name as "Nama Outlet", 
+            address as "Alamat", 
+            phone as "Nomor Telepon"
+        FROM
+            ms_outlet
+        WHERE
+            phone ILIKE %(search)s OR
+            outlet_name ILIKE %(search)s OR
+            address ILIKE %(search)s
+    """
+    param = {
+        "search": f"%{search}%"
+    }
+
+    return db.execute(query, param)
+
 
 def update_data_outlet(data):
     db = PostgresDatabase()

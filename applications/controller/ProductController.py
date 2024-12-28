@@ -1,4 +1,6 @@
 from flask_login import current_user, login_user, login_required, logout_user
+
+from applications.controller import GlobalFunction
 from ..dao import LoginDao as loginDao
 from .. import login_manager
 from io import StringIO
@@ -97,11 +99,35 @@ def add_product():
     return jsonify({"status": db_res.status, "message": "Berhasil Tambah data"})
 
 
-@app.route('/product/downloadAllProduct', methods=['GET'])
+@app.route('/product/downloadAllProductPdf', methods=['GET'])
 @login_required
-def download_all_product():
+def download_all_product_pdf():
     db_res = productDao.get_all_product()
     data = db_res.result
     if len(data) > 0:
         return jsonify({"status": True, "message": "Berhasil Get Data", "data":generate_pdf(data, 'landscape')})
     return jsonify({"status": False, "message": "Tidak Ada Data"})
+
+
+@app.route('/product/downloadAllProduct', methods=['GET'])
+@login_required
+def download_all_product():
+    res = productDao.get_data_product_filter(
+        request.args.get("search"),
+        request.args.get("category"),
+        request.args.get("merk"),
+        request.args.get("vehicle"),
+        request.args.get('filter')
+    )
+    data = res.result
+    for x in data:
+        x['Barcode'] = int(x['Barcode']) 
+        x['Qty'] = float(x['Qty']) 
+        x['Harga Beli'] = float(x['Harga Beli']) 
+        x['Harga Jual'] = float(x['Harga Jual']) 
+    message = ""
+    if len(data) > 0:
+        download, message = GlobalFunction.generateExcel('Produk', data)
+        if download:
+            return jsonify({"status": True, "message": "Berhasil Download File"})
+    return jsonify({"status": False, "message": f"Gagal Download File\n{message}"})
